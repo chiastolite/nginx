@@ -42,7 +42,8 @@ include_recipe "nginx::commons_dir"
 include_recipe "nginx::commons_script"
 include_recipe "build-essential"
 
-src_filepath  = "#{Chef::Config['file_cache_path'] || '/tmp'}/nginx-#{node['nginx']['source']['version']}.tar.gz"
+tmp_dir = Dir.mktmpdir
+src_filepath  = "#{tmp_dir}/nginx-#{node['nginx']['source']['version']}.tar.gz"
 packages = value_for_platform(
     ["centos","redhat","fedora","amazon","scientific"] => {'default' => ['pcre-devel', 'openssl-devel']},
     "gentoo" => {"default" => []},
@@ -157,9 +158,9 @@ configure_flags = node.run_state['nginx_configure_flags']
 nginx_force_recompile = node.run_state['nginx_force_recompile']
 
 bash "compile_nginx_source" do
-  cwd ::File.dirname(src_filepath)
+  cwd tmp_dir
   code <<-EOH
-    tar zxf #{::File.basename(src_filepath)} -C #{::File.dirname(src_filepath)} &&
+    tar zxf #{::File.basename(src_filepath)} -C #{tmp_dir} &&
     cd nginx-#{node['nginx']['source']['version']} &&
     ./configure #{node.run_state['nginx_configure_flags'].join(" ")} &&
     make && make install
